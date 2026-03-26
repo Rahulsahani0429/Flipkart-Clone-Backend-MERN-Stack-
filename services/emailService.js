@@ -11,13 +11,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("SMTP Connection Error:", error.message || error);
-    } else {
-        console.log("SMTP Server Ready and Verified");
-    }
-});
+// Verification disabled temporarily due to 535 BadCredentials crashing the server
 
 /**
  * @desc Get email template based on type
@@ -104,39 +98,8 @@ const getTemplate = (type, data) => {
     }
 };
 
-/**
- * @desc Send email
- */
 export const sendEmail = async (email, type, data) => {
-    // Check for placeholders in env
-    if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your-email@gmail.com' ||
-        !process.env.EMAIL_PASS || process.env.EMAIL_PASS === 'your_16_character_app_password') {
-
-        const missing = [];
-        if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your-email@gmail.com') missing.push("EMAIL_USER");
-        if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS === 'your_16_character_app_password') missing.push("EMAIL_PASS");
-
-        console.warn(`[SMTP] Configuration Missing: ${missing.join(", ")}. skipping email send.`);
-        console.info("[SMTP] TIP: Generate a 16-character 'App Password' from your Google Account settings to allow sending emails.");
-
-        return { success: false, error: `Email credentials not configured: missing ${missing.join(", ")}` };
-    }
-
-    try {
-        const { subject, html } = getTemplate(type, data);
-
-        const mailOptions = {
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject,
-            html,
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`Email sent: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error("Email send error:", error);
-        return { success: false, error: error.message };
-    }
+    // Disabled temporarily due to 535 BadCredentials crashing the server streams
+    console.warn(`[SMTP] Email disabled temporarily due to Google 535 error.`);
+    return { success: false, error: "Email disabled temporarily" };
 };
