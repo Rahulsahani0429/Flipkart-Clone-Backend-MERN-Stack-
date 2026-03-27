@@ -40,8 +40,12 @@ app.use(
     origin: function (origin, callback) {
       // Allow requests with no origin (mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
-      // In development, allow any localhost origin
+      // Allow any localhost or 127.0.0.1 in development
       if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+        return callback(null, true);
+      }
+      // Allow any Vercel deployment (*.vercel.app)
+      if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
         return callback(null, true);
       }
       if (allowedOrigins.includes(origin)) {
@@ -54,6 +58,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/", (_req, res) => res.send("API is running..."));
