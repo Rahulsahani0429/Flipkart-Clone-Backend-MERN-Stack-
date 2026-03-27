@@ -51,6 +51,11 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // Encrypt password before saving
 userSchema.pre("save", async function () {
+  // Auto-sync role with isAdmin flag
+  if (this.isModified("isAdmin") || this.isNew) {
+    this.role = this.isAdmin ? "Admin" : "Client";
+  }
+
   if (!this.isModified("password")) {
     return;
   }

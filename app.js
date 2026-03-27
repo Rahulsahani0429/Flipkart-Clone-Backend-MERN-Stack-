@@ -1,9 +1,7 @@
 import "./env.js";
 import express from "express";
 import cors from "cors";
-import http from "http";
 import connectDB from "./config/db.js";
-import { initSocket } from "./socket.js";
 import { globalSearch } from "./controllers/searchController.js";
 import { protect, admin } from "./middleware/authMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -16,14 +14,10 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import shipmentRoutes from "./routes/shipmentRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 
-// Connect to database
+// Connect to database (cached for serverless warm starts)
 connectDB();
 
 const app = express();
-const server = http.createServer(app);
-
-// Initialize Socket.IO (must be before routes)
-initSocket(server);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(express.json());
@@ -88,11 +82,21 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// ── Start server  ─────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`🔑 JWT_SECRET loaded: ${process.env.JWT_SECRET ? "YES (len=" + process.env.JWT_SECRET.length + ")" : "❌ MISSING"}`);
-});
+// ── Start server (local dev only — Vercel runs serverless) ────────────────────
+// On Vercel, the exported `app` is used directly as the request handler.
+// server.listen() is only called in a real Node process (local / Railway / Render).
+if (process.env.VERCEL !== "1") {
+  import("http").then(({ default: http }) => {
+    import("./socket.js").then(({ initSocket }) => {
+      const server = http.createServer(app);
+      initSocket(server);
+      const PORT = process.env.PORT || 5000;
+      server.listen(PORT, "0.0.0.0", () => {
+        console.log(`\n✅ Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+        console.log(`🔑 JWT_SECRET loaded: ${process.env.JWT_SECRET ? "YES (len=" + process.env.JWT_SECRET.length + ")" : "❌ MISSING"}`);
+      });
+    });
+  });
+}
 
 export default app;
